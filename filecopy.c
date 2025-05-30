@@ -1,7 +1,7 @@
 /*
 Created by Giorgio Caggegi on 2025/05/30
 
-Questo programma copia file regolari, symlinks e directory (ricorsivamente),
+Questo programma copia file regolari, symlinks e directory (ricorsivamente)
 all'interno della directory passata come ultimo argomento.
 Vengono copiati anche i timestamp di creazione e ultimo accesso.
 I file copiati avranno gli stessi permessi di quelli originali.
