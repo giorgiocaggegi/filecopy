@@ -139,7 +139,7 @@ void copy_slink(char *src, char *dst, struct stat *src_stat) {
     // Creo il symlink
     if (symlink(buffer, dst_path) == -1) {
         if (errno = EEXIST) {
-            fprintf(stderr, "Ignored symlink creation of %s : ", src);
+            fprintf(stderr, "copy_slink(): ignored copy of %s : ", src);
             perror("");
             free(dst_path);
             return;
@@ -173,7 +173,6 @@ void copy_dir(char *sd_path, char *dd_1path, struct stat *src_stat) {
 
     DIR *sd_stream;
     struct dirent *entry;
-    struct stat napoli;
 
     // Devo creare la directory di destinazione con lo stesso nome originale
     // e gli stessi permessi, dentro la directory con percorso dd_1path
@@ -192,8 +191,8 @@ void copy_dir(char *sd_path, char *dd_1path, struct stat *src_stat) {
     struct timespec times[2] = {src_stat->st_atim, src_stat->st_mtim};
 
     // Imposto i timestamps della cartella appena creata
-    if (utimensat(AT_FDCWD, sd_path, times, 0) == -1) {
-        fprintf(stderr, "copy_dir(): utimensat() error on %s\n", sd_path);
+    if (utimensat(AT_FDCWD, dd_compath, times, 0) == -1) {
+        fprintf(stderr, "copy_dir(): utimensat() error on %s\n", dd_compath);
         perror("");
         // Il processo non esce in caso di errore
     }
@@ -205,33 +204,20 @@ void copy_dir(char *sd_path, char *dd_1path, struct stat *src_stat) {
     
     while ((entry = readdir(sd_stream))) {
 
-        // Concateno il nome dell'entry con il percorso della cartella
-        size_t df_compath_sz = strlen(sd_path) + strlen(entry->d_name) + 2;
-        char df_compath[df_compath_sz];
-        df_compath[df_compath_sz-1] = '\0';
-        sprintf(df_compath, "%s/%s", sd_path, entry->d_name);
-
-        // Ottengo le stat sull'entry corrente
-        if (lstat(df_compath, &napoli) == -1) {
-            EXITMSG("copy_dir(): lstat() error on %s", df_compath);
-        }
-
         // Ignoro le directories virtuali
-        if (S_ISDIR(napoli.st_mode)) {
-            if (strcmp(entry->d_name, ".") == 0 ||
-                strcmp(entry->d_name, ".." ) == 0) {
-                continue;
-            }
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, ".." ) == 0) {
+            continue;
         }
 
-        // Il nuovo file sarà a dd_compath/df_compath
-        copy_discern(df_compath, dd_compath);
+        // Concateno il nome dell'entry con il percorso della cartella
+        size_t sf_compath_sz = strlen(sd_path) + strlen(entry->d_name) + 2;
+        char sf_compath[sf_compath_sz];
+        sf_compath[sf_compath_sz-1] = '\0';
+        sprintf(sf_compath, "%s/%s", sd_path, entry->d_name);
 
-        errno = 0;
-    }
-    // Verifico eventuali errori su readdir
-    if (errno != 0) {
-        EXITMSG("readdir() error on %s", dd_compath);
+        // Il nuovo file sarà a dd_compath/basename(sf_compath)
+        copy_discern(sf_compath, dd_compath);
     }
 
     free(dd_compath);
